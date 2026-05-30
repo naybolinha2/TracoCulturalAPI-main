@@ -7,7 +7,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-
 import java.util.List;
 import java.util.Map;
 
@@ -19,7 +18,6 @@ public class UsuarioServices {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
-
 
     public List<Usuario> findAll() {
         return usuarioRepository.findAll();
@@ -34,8 +32,16 @@ public class UsuarioServices {
         return usuarioRepository.findByEmail(email);
     }
 
-    // Usado no register — sempre encripta a senha antes de salvar
+    // Register normal — isAdm sempre false por segurança
     public Usuario save(Usuario usuario) {
+        usuario.setIsAdm(false);  // ← ninguém vira adm pelo register
+        usuario.setSenha(passwordEncoder.encode(usuario.getSenha()));
+        return usuarioRepository.save(usuario);
+    }
+
+    // Criação de admin — uso interno apenas
+    public Usuario saveAdmin(Usuario usuario) {
+        usuario.setIsAdm(true);
         usuario.setSenha(passwordEncoder.encode(usuario.getSenha()));
         return usuarioRepository.save(usuario);
     }
@@ -44,11 +50,9 @@ public class UsuarioServices {
         Usuario existente = findById(id);
         existente.setNome(usuario.getNome());
         existente.setEmail(usuario.getEmail());
-        // Só re-encripta se uma nova senha foi enviada
         if (usuario.getSenha() != null && !usuario.getSenha().isBlank()) {
             existente.setSenha(passwordEncoder.encode(usuario.getSenha()));
         }
-        // Atualiza foto de perfil apenas se enviada
         if (usuario.getFotoPerfil() != null) {
             existente.setFotoPerfil(usuario.getFotoPerfil());
         }

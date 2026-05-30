@@ -1,10 +1,13 @@
 package com.TracoCultural.TracoCultural.controller;
 
 import com.TracoCultural.TracoCultural.model.entity.Evento;
+import com.TracoCultural.TracoCultural.model.entity.Usuario;
 import com.TracoCultural.TracoCultural.model.services.EventoService;
+import com.TracoCultural.TracoCultural.model.services.UsuarioServices;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,10 +20,31 @@ public class EventoController {
     @Autowired
     private EventoService eventoService;
 
+    @Autowired
+    private UsuarioServices usuarioServices;
+
+    // Pega o usuário logado pelo email extraído do token JWT
+    private Usuario getUsuarioLogado() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        return usuarioServices.findByEmail(email);
+    }
+
+    // Verifica se o usuário logado pode editar/deletar o evento
+    // Admin pode tudo, dono pode o próprio evento
+    private boolean temPermissao(Evento evento) {
+        try {
+            Usuario logado = getUsuarioLogado();
+            if (logado == null) return false;
+            if (logado.getIsAdm()) return true;  // ← admin pode tudo
+            if (evento.getUsuario() == null) return false;
+            return evento.getUsuario().getId().equals(logado.getId());  // ← dono pode o próprio
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+
     // GET /api/v1/eventos
-    // GET /api/v1/eventos?cidade=SP
-    // GET /api/v1/eventos?categoriaId=1
-    // GET /api/v1/eventos?cidade=SP&categoriaId=1
     @GetMapping
     public ResponseEntity<List<Evento>> listarEventos(
             @RequestParam(required = false) String cidade,
@@ -35,6 +59,7 @@ public class EventoController {
 
         return ResponseEntity.ok(eventoService.findAll());
     }
+
 
     // GET /api/v1/eventos/{id}
     @GetMapping("/{id}")
@@ -53,17 +78,29 @@ public class EventoController {
         }
     }
 
+
     // POST /api/v1/eventos
     @PostMapping
     public ResponseEntity<Evento> publicarEvento(@RequestBody Evento evento) {
         return ResponseEntity.status(HttpStatus.CREATED).body(eventoService.save(evento));
     }
 
+
     // PUT /api/v1/eventos/{id}
     @PutMapping("/{id}")
     public ResponseEntity<Object> atualizarEvento(@PathVariable String id, @RequestBody Evento evento) {
         try {
-            return ResponseEntity.ok(eventoService.update(Long.parseLong(id), evento));
+            Long eventoId = Long.parseLong(id);
+            Evento existente = eventoService.findById(eventoId);
+
+            if (!temPermissao(existente)) {
+                return ResponseEntity.status(403).body(
+                        Map.of("status", 403, "retorno", "Forbidden",
+                               "message", "Você não tem permissão para editar este evento")
+                );
+            }
+
+            return ResponseEntity.ok(eventoService.update(eventoId, evento));
         } catch (NumberFormatException e) {
             return ResponseEntity.badRequest().body(
                     Map.of("status", 400, "retorno", "Bad Request",
@@ -76,11 +113,22 @@ public class EventoController {
         }
     }
 
+
     // DELETE /api/v1/eventos/{id}
     @DeleteMapping("/{id}")
     public ResponseEntity<Object> deletarEvento(@PathVariable String id) {
         try {
-            eventoService.deleteById(Long.parseLong(id));
+            Long eventoId = Long.parseLong(id);
+            Evento existente = eventoService.findById(eventoId);
+
+            if (!temPermissao(existente)) {
+                return ResponseEntity.status(403).body(
+                        Map.of("status", 403, "retorno", "Forbidden",
+                               "message", "Você não tem permissão para deletar este evento")
+                );
+            }
+
+            eventoService.deleteById(eventoId);
             return ResponseEntity.ok(
                     Map.of("status", 200, "retorno", "OK",
                            "message", "Evento deletado com o ID: " + id)

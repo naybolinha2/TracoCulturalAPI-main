@@ -56,7 +56,7 @@ public class UsuarioController {
     }
 
 
-    // POST /api/v1/usuarios/auth/register
+    // POST /api/v1/usuarios/auth/register — cadastro público, isAdm sempre false
     @PostMapping("/auth/register")
     public ResponseEntity<Object> salvarUsuario(@RequestBody Usuario usuario) {
         if (usuarioRepository.existsByEmail(usuario.getEmail())) {
@@ -77,6 +77,27 @@ public class UsuarioController {
             return ResponseEntity.status(500).body(
                     Map.of("status", 500, "retorno", "Internal Server Error",
                            "message", "Erro ao cadastrar usuário: " + e.getMessage())
+            );
+        }
+    }
+
+
+    // POST /api/v1/usuarios/admin/criar — uso interno, bloqueado no Security
+    @PostMapping("/admin/criar")
+    public ResponseEntity<Object> criarAdmin(@RequestBody Usuario usuario) {
+        if (usuarioRepository.existsByEmail(usuario.getEmail())) {
+            return ResponseEntity.status(409).body(
+                    Map.of("status", 409, "retorno", "Conflict",
+                           "message", "E-mail já cadastrado: " + usuario.getEmail())
+            );
+        }
+        try {
+            Usuario novo = usuarioServices.saveAdmin(usuario);
+            return ResponseEntity.status(HttpStatus.CREATED).body(new UsuarioDTO(novo));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(
+                    Map.of("status", 500, "retorno", "Internal Server Error",
+                           "message", "Erro ao criar admin: " + e.getMessage())
             );
         }
     }
