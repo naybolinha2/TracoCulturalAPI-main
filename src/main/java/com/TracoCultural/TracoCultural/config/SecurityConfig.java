@@ -33,10 +33,11 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .authorizeHttpRequests(auth -> auth
                 // Rotas públicas
-                .requestMatchers(HttpMethod.POST, "/api/v1/usuarios/auth/register").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
-                .requestMatchers(HttpMethod.GET,  "/api/v1/eventos").permitAll()
-                .requestMatchers(HttpMethod.GET,  "/api/v1/eventos/{id}").permitAll()
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                .requestMatchers("/api/v1/auth/**").permitAll()
+                .requestMatchers("/api/v1/usuarios/auth/register").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/eventos").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/eventos/**").permitAll()
                 // Rotas protegidas
                 .requestMatchers(HttpMethod.POST,   "/api/v1/eventos").authenticated()
                 .requestMatchers(HttpMethod.PUT,    "/api/v1/eventos/**").authenticated()
@@ -59,9 +60,14 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(List.of(
-                "http://localhost:5173", "http://localhost:5174", "http://localhost:5175",
-                "http://localhost:5176", "http://localhost:5177", "http://localhost:5178",
-                "http://localhost:5179", "http://localhost:8686"
+                "http://localhost:5173", "http://127.0.0.1:5173",
+                "http://localhost:5174", "http://127.0.0.1:5174",
+                "http://localhost:5175", "http://127.0.0.1:5175",
+                "http://localhost:5176", "http://127.0.0.1:5176",
+                "http://localhost:5177", "http://127.0.0.1:5177",
+                "http://localhost:5178", "http://127.0.0.1:5178",
+                "http://localhost:5179", "http://127.0.0.1:5179",
+                "http://localhost:8686", "http://127.0.0.1:8686"
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));

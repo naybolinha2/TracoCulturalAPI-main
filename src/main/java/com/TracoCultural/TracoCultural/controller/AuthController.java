@@ -23,6 +23,27 @@ public class AuthController {
     @Autowired
     private JwtUtil jwtUtil;
 
+    // POST /api/v1/auth/register
+    @PostMapping("/register")
+    public ResponseEntity<Object> register(@RequestBody Usuario usuario) {
+        if (usuario.getEmail() == null || usuario.getSenha() == null || usuario.getNome() == null) {
+            return ResponseEntity.badRequest().body(
+                    Map.of("status", 400, "retorno", "Bad Request", "message", "Nome, email e senha são obrigatórios")
+            );
+        }
+
+        if (usuarioRepository.findByEmail(usuario.getEmail()) != null) {
+            return ResponseEntity.status(409).body(
+                    Map.of("status", 409, "retorno", "Conflict", "message", "Email já cadastrado")
+            );
+        }
+
+        usuario.setSenha(passwordEncoder.encode(usuario.getSenha()));
+        Usuario novo = usuarioRepository.save(usuario);
+
+        return ResponseEntity.status(201).body(novo);
+    }
+
     // POST /api/v1/auth/login
     // Body: { "email": "...", "senha": "..." }
     @PostMapping("/login")

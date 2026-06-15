@@ -19,8 +19,10 @@ public class Usuario {
     @Column(length = 255, nullable = false)
     private String senha;
 
+    @Column(name = "fotoPerfil")
     private byte[] fotoPerfil;
 
+    @Column(name = "isAdm")
     private boolean isAdm;
 
 
@@ -69,5 +71,12 @@ public class Usuario {
         this.email = email;
     }
 
+    public byte[] getFotoPerfil() {
+        return fotoPerfil;
+    }
+
+    public void setFotoPerfil(byte[] fotoPerfil) {
+        this.fotoPerfil = fotoPerfil;
+    }
 
 }
