@@ -8,11 +8,20 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
 @RequestMapping("/api/v1/auth")
 public class AuthController {
+
+    private static final int MAX_TENTATIVAS = 5;
+    private static final int JANELA_MINUTOS = 10;
+
+    private final Map<String, List<LocalDateTime>> tentativasPorEmail = new ConcurrentHashMap<>();
 
     @Autowired
     private UsuarioRepository usuarioRepository;
@@ -52,7 +61,6 @@ public class AuthController {
     }
 
     // POST /api/v1/auth/login
-    // Body: { "email": "...", "senha": "..." }
     @PostMapping("/login")
     public ResponseEntity<Object> login(@RequestBody Map<String, String> body) {
         String email = body.get("email");
@@ -64,14 +72,23 @@ public class AuthController {
             );
         }
 
+        if (estaBloqueado(email)) {
+            return ResponseEntity.status(429).body(
+                    Map.of("status", 429, "retorno", "Too Many Requests",
+                            "message", "Muitas tentativas. Tente novamente em alguns minutos.")
+            );
+        }
+
         Usuario usuario = usuarioRepository.findByEmail(email);
 
         if (usuario == null || !passwordEncoder.matches(senha, usuario.getSenha())) {
+            registrarTentativa(email);
             return ResponseEntity.status(401).body(
                     Map.of("status", 401, "retorno", "Unauthorized", "message", "Email ou senha inválidos")
             );
         }
 
+        tentativasPorEmail.remove(email);
         String token = jwtUtil.gerarToken(usuario.getEmail());
 
         return ResponseEntity.ok(Map.of(
@@ -81,5 +98,17 @@ public class AuthController {
                 "email",  usuario.getEmail(),
                 "isAdm",  usuario.getIsAdm()
         ));
+    }
+
+    private void registrarTentativa(String email) {
+        tentativasPorEmail.computeIfAbsent(email, k -> new ArrayList<>()).add(LocalDateTime.now());
+    }
+
+    private boolean estaBloqueado(String email) {
+        List<LocalDateTime> tentativas = tentativasPorEmail.get(email);
+        if (tentativas == null) return false;
+        LocalDateTime janela = LocalDateTime.now().minusMinutes(JANELA_MINUTOS);
+        tentativas.removeIf(t -> t.isBefore(janela));
+        return tentativas.size() >= MAX_TENTATIVAS;
     }
 }

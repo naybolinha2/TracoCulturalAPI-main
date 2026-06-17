@@ -4,6 +4,7 @@ import com.TracoCultural.TracoCultural.model.Repository.UsuarioRepository;
 import com.TracoCultural.TracoCultural.model.entity.Evento;
 import com.TracoCultural.TracoCultural.model.entity.Usuario;
 import com.TracoCultural.TracoCultural.model.services.EventoService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -30,7 +31,10 @@ public class EventoController {
     @GetMapping
     public ResponseEntity<List<Evento>> listarEventos(
             @RequestParam(required = false) String cidade,
-            @RequestParam(required = false) Long categoriaId) {
+            @RequestParam(required = false) Long categoriaId,
+            @RequestParam(required = false) Long idUsuario) {
+        if (idUsuario != null)
+            return ResponseEntity.ok(eventoService.findByUsuarioId(idUsuario));
         if (cidade != null && categoriaId != null)
             return ResponseEntity.ok(eventoService.findByCidadeAndCategoria(cidade, categoriaId));
         if (cidade != null)
@@ -59,19 +63,26 @@ public class EventoController {
     }
 
     @PostMapping
-    public ResponseEntity<Evento> publicarEvento(@RequestBody Evento evento) {
-        evento.setIdUsuarioFk(getUsuarioAutenticado().getId());
-        return ResponseEntity.status(HttpStatus.CREATED).body(eventoService.save(evento));
+    public ResponseEntity<Object> publicarEvento(@Valid @RequestBody Evento evento) {
+        try {
+            return ResponseEntity.status(HttpStatus.CREATED).body(eventoService.save(evento));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(
+                    Map.of("status", 400, "retorno", "Bad Request", "message", e.getMessage()));
+        }
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Object> atualizarEvento(@PathVariable String id, @RequestBody Evento evento) {
+    public ResponseEntity<Object> atualizarEvento(@PathVariable String id, @Valid @RequestBody Evento evento) {
         try {
             Evento existente = eventoService.findById(Long.parseLong(id));
             if (!existente.getIdUsuarioFk().equals(getUsuarioAutenticado().getId())) {
                 return ResponseEntity.status(403).body(Map.of("message", "Acesso negado"));
             }
             return ResponseEntity.ok(eventoService.update(Long.parseLong(id), evento));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(
+                    Map.of("status", 400, "retorno", "Bad Request", "message", e.getMessage()));
         } catch (NumberFormatException e) {
             return ResponseEntity.badRequest().body(
                     Map.of("status", 400, "retorno", "Bad Request", "message", "Caminho informado inválido"));

@@ -1,8 +1,11 @@
 package com.TracoCultural.TracoCultural.model.services;
 
 import com.TracoCultural.TracoCultural.model.Repository.EventoRepository;
+import com.TracoCultural.TracoCultural.model.Repository.UsuarioRepository;
 import com.TracoCultural.TracoCultural.model.entity.Evento;
+import com.TracoCultural.TracoCultural.model.entity.Usuario;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -10,8 +13,13 @@ import java.util.List;
 @Service
 public class EventoService {
 
+    private static final int LIMITE_IMAGEM_BYTES = 2 * 1024 * 1024; // 2MB
+
     @Autowired
     private EventoRepository eventoRepository;
+
+    @Autowired
+    private UsuarioRepository usuarioRepository;
 
 
     public List<Evento> findAll() {
@@ -36,27 +44,43 @@ public class EventoService {
     }
 
     public Evento save(Evento evento) {
+        if (evento.getCardImage() != null && evento.getCardImage().length > LIMITE_IMAGEM_BYTES)
+            throw new IllegalArgumentException("Imagem deve ter no máximo 2MB.");
+
+        if (evento.getDataFim() != null && !evento.getDataFim().after(evento.getDataInicio()))
+            throw new IllegalArgumentException("Data de término deve ser posterior à data de início.");
+
+        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Usuario usuario = usuarioRepository.findByEmail(email);
+        evento.setIdUsuarioFk(usuario.getId());
+
         return eventoRepository.save(evento);
     }
 
     public Evento update(Long id, Evento evento) {
         Evento existente = findById(id);
+
+        if (evento.getCardImage() != null && evento.getCardImage().length > LIMITE_IMAGEM_BYTES)
+            throw new IllegalArgumentException("Imagem deve ter no máximo 2MB.");
+
+        if (evento.getDataFim() != null && evento.getDataInicio() != null
+                && !evento.getDataFim().after(evento.getDataInicio()))
+            throw new IllegalArgumentException("Data de término deve ser posterior à data de início.");
+
         existente.setNome(evento.getNome());
         existente.setDescricao(evento.getDescricao());
         existente.setDataInicio(evento.getDataInicio());
         existente.setDataFim(evento.getDataFim());
         existente.setCidade(evento.getCidade());
         existente.setLinkExterno(evento.getLinkExterno());
-        existente.setIdUsuarioFk(evento.getIdUsuarioFk());
         existente.setCategoria(evento.getCategoria());
         existente.setCardImage(evento.getCardImage());
         return eventoRepository.save(existente);
     }
 
     public void deleteById(Long id) {
-        if (!eventoRepository.existsById(id)) {
+        if (!eventoRepository.existsById(id))
             throw new RuntimeException("Evento não encontrado com o ID: " + id);
-        }
         eventoRepository.deleteById(id);
     }
 

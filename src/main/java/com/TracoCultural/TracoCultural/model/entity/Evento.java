@@ -1,6 +1,8 @@
 package com.TracoCultural.TracoCultural.model.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 import java.util.Date;
 
@@ -12,6 +14,7 @@ public class Evento {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotBlank(message = "Nome é obrigatório")
     @Column(length = 100, nullable = false)
     private String nome;
 
@@ -20,11 +23,13 @@ public class Evento {
 
     private byte[] cardImage;
 
+    @NotNull(message = "Data de início é obrigatória")
     @Column(nullable = false)
     private Date dataInicio;
 
     private Date dataFim;
 
+    @NotBlank(message = "Cidade é obrigatória")
     @Column(length = 45)
     private String cidade;
 
@@ -33,6 +38,7 @@ public class Evento {
 
     private Long idUsuarioFk;
 
+    @NotNull(message = "Categoria é obrigatória")
     @ManyToOne
     @JoinColumn(name = "idCategoriaFk")
     private Categoria categoria;

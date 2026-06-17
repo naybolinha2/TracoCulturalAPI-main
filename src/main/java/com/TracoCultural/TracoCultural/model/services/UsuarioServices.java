@@ -34,22 +34,51 @@ public class UsuarioServices {
     }
 
     public Usuario save(Usuario usuario) {
+        if (usuario.getNome() == null || usuario.getNome().isBlank())
+            throw new IllegalArgumentException("Nome é obrigatório");
+
+        if (usuario.getEmail() == null || !usuario.getEmail().matches("^[\\w.+\\-]+@[\\w\\-]+\\.[a-zA-Z]{2,}$"))
+            throw new IllegalArgumentException("E-mail inválido");
+
+        if (usuario.getSenha() == null || usuario.getSenha().length() < 8)
+            throw new IllegalArgumentException("Senha deve ter no mínimo 8 caracteres");
+
+        if (usuarioRepository.findByEmail(usuario.getEmail()) != null)
+            throw new IllegalStateException("Email já cadastrado");
+
+        usuario.setIsAdm(false);
         usuario.setSenha(passwordEncoder.encode(usuario.getSenha()));
         return usuarioRepository.save(usuario);
     }
 
     public Usuario update(Long id, Usuario usuario) {
         Usuario existente = findById(id);
-        existente.setNome(usuario.getNome());
-        existente.setEmail(usuario.getEmail());
-        // Só re-encripta se uma nova senha foi enviada
-        if (usuario.getSenha() != null && !usuario.getSenha().isBlank()) {
-            existente.setSenha(passwordEncoder.encode(usuario.getSenha()));
+
+        if (usuario.getEmail() != null) {
+            Usuario dono = usuarioRepository.findByEmail(usuario.getEmail());
+            if (dono != null && !dono.getId().equals(id))
+                throw new IllegalStateException("Email já em uso por outra conta.");
+            existente.setEmail(usuario.getEmail());
         }
+
+        if (usuario.getNome() != null) existente.setNome(usuario.getNome());
         if (usuario.getEstado() != null) existente.setEstado(usuario.getEstado());
         if (usuario.getIcone() != null) existente.setIcone(usuario.getIcone());
         if (usuario.getCorFundo() != null) existente.setCorFundo(usuario.getCorFundo());
         return usuarioRepository.save(existente);
+    }
+
+    public void atualizarSenha(Long id, String senhaAtual, String novaSenha) {
+        Usuario existente = findById(id);
+
+        if (!passwordEncoder.matches(senhaAtual, existente.getSenha()))
+            throw new IllegalArgumentException("Senha atual incorreta.");
+
+        if (novaSenha == null || novaSenha.length() < 8)
+            throw new IllegalArgumentException("Nova senha deve ter no mínimo 8 caracteres.");
+
+        existente.setSenha(passwordEncoder.encode(novaSenha));
+        usuarioRepository.save(existente);
     }
 
     public boolean idExists(String id) {
