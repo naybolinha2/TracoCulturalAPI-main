@@ -1,11 +1,15 @@
 package com.TracoCultural.TracoCultural.model.services;
 
+import com.TracoCultural.TracoCultural.model.Repository.ComentarioRepository;
+import com.TracoCultural.TracoCultural.model.Repository.EventoRepository;
 import com.TracoCultural.TracoCultural.model.Repository.UsuarioRepository;
+import com.TracoCultural.TracoCultural.model.entity.Evento;
 import com.TracoCultural.TracoCultural.model.entity.Usuario;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
@@ -18,6 +22,12 @@ public class UsuarioServices {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private EventoRepository eventoRepository;
+
+    @Autowired
+    private ComentarioRepository comentarioRepository;
 
 
     public List<Usuario> findAll() {
@@ -53,18 +63,18 @@ public class UsuarioServices {
 
     public Usuario update(Long id, Usuario usuario) {
         Usuario existente = findById(id);
+        existente.setNome(usuario.getNome());
 
-        if (usuario.getEmail() != null) {
-            Usuario dono = usuarioRepository.findByEmail(usuario.getEmail());
-            if (dono != null && !dono.getId().equals(id))
-                throw new IllegalStateException("Email já em uso por outra conta.");
-            existente.setEmail(usuario.getEmail());
-        }
+        Usuario comMesmoEmail = usuarioRepository.findByEmail(usuario.getEmail());
+        if (comMesmoEmail != null && !comMesmoEmail.getId().equals(id))
+            throw new RuntimeException("EMAIL_EM_USO");
+        existente.setEmail(usuario.getEmail());
 
-        if (usuario.getNome() != null) existente.setNome(usuario.getNome());
-        if (usuario.getEstado() != null) existente.setEstado(usuario.getEstado());
-        if (usuario.getIcone() != null) existente.setIcone(usuario.getIcone());
+        if (usuario.getSenha() != null && !usuario.getSenha().isBlank())
+            existente.setSenha(passwordEncoder.encode(usuario.getSenha()));
+        if (usuario.getIcone() != null)    existente.setIcone(usuario.getIcone());
         if (usuario.getCorFundo() != null) existente.setCorFundo(usuario.getCorFundo());
+        if (usuario.getEstado() != null)   existente.setEstado(usuario.getEstado());
         return usuarioRepository.save(existente);
     }
 
@@ -85,21 +95,23 @@ public class UsuarioServices {
         return usuarioRepository.existsById(Long.parseLong(id));
     }
 
+    @Transactional
     public ResponseEntity<Object> deleteById(String id) {
         try {
-            if (idExists(id)) {
-                usuarioRepository.deleteById(Long.parseLong(id));
-                return ResponseEntity.ok(
-                        Map.of("status", 200, "retorno", "OK", "message", "Usuario deletado com o ID: " + id)
-                );
-            }
-            return ResponseEntity.status(404).body(
-                    Map.of("status", 404, "retorno", "Not Found", "message", "Usuario não encontrado com o ID: " + id)
-            );
+            Long uid = Long.parseLong(id);
+            if (!usuarioRepository.existsById(uid))
+                return ResponseEntity.status(404).body(
+                        Map.of("status", 404, "message", "Usuário não encontrado"));
+
+            List<Evento> eventos = eventoRepository.findByIdUsuarioFk(uid);
+            for (Evento ev : eventos)
+                comentarioRepository.deleteByIdEventoFk(ev.getId());
+            eventoRepository.deleteByIdUsuarioFk(uid);
+            usuarioRepository.deleteById(uid);
+            return ResponseEntity.ok(Map.of("status", 200, "message", "Conta excluída com sucesso"));
         } catch (NumberFormatException e) {
             return ResponseEntity.badRequest().body(
-                    Map.of("status", 400, "retorno", "Bad Request", "message", "Caminho inválido")
-            );
+                    Map.of("status", 400, "message", "ID inválido"));
         }
     }
 }

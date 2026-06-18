@@ -1,5 +1,6 @@
 package com.TracoCultural.TracoCultural.controller;
 
+import com.TracoCultural.TracoCultural.model.Repository.EventoRepository;
 import com.TracoCultural.TracoCultural.model.Repository.UsuarioRepository;
 import com.TracoCultural.TracoCultural.model.entity.Evento;
 import com.TracoCultural.TracoCultural.model.entity.Usuario;
@@ -21,6 +22,8 @@ public class EventoController {
     @Autowired
     private EventoService eventoService;
     @Autowired
+    private EventoRepository eventoRepository;
+    @Autowired
     private UsuarioRepository usuarioRepository;
 
     private Usuario getUsuarioAutenticado() {
@@ -34,7 +37,7 @@ public class EventoController {
             @RequestParam(required = false) Long categoriaId,
             @RequestParam(required = false) Long idUsuario) {
         if (idUsuario != null)
-            return ResponseEntity.ok(eventoService.findByUsuarioId(idUsuario));
+            return ResponseEntity.ok(eventoRepository.findByIdUsuarioFk(idUsuario));
         if (cidade != null && categoriaId != null)
             return ResponseEntity.ok(eventoService.findByCidadeAndCategoria(cidade, categoriaId));
         if (cidade != null)

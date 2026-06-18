@@ -1,52 +1,50 @@
 package com.TracoCultural.TracoCultural.controller;
 
-import com.TracoCultural.TracoCultural.model.Repository.ComentarioRepository;
-import com.TracoCultural.TracoCultural.model.Repository.EventoRepository;
-import com.TracoCultural.TracoCultural.model.Repository.UsuarioRepository;
 import com.TracoCultural.TracoCultural.model.entity.Comentario;
-import com.TracoCultural.TracoCultural.model.entity.Evento;
-import com.TracoCultural.TracoCultural.model.entity.Usuario;
+import com.TracoCultural.TracoCultural.model.services.ComentarioService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/v1/comentarios")
+@RequestMapping("/api/v1/eventos/{eventoId}/comentarios")
 public class ComentarioController {
 
     @Autowired
-    private ComentarioRepository comentarioRepository;
-    @Autowired
-    private UsuarioRepository usuarioRepository;
-    @Autowired
-    private EventoRepository eventoRepository;
+    private ComentarioService comentarioService;
 
     @GetMapping
-    public ResponseEntity<List<Comentario>> listar(@RequestParam Long eventoId) {
-        return ResponseEntity.ok(comentarioRepository.findByEventoId(eventoId));
+    public ResponseEntity<List<Comentario>> listar(@PathVariable Long eventoId) {
+        return ResponseEntity.ok(comentarioService.listarPorEvento(eventoId));
     }
 
     @PostMapping
-    public ResponseEntity<Object> criar(@RequestBody Map<String, Object> body) {
-        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        Usuario usuario = usuarioRepository.findByEmail(email);
+    public ResponseEntity<Object> criar(@PathVariable Long eventoId,
+                                        @RequestBody Map<String, String> body,
+                                        Authentication auth) {
+        try {
+            Comentario c = comentarioService.salvar(eventoId, body.get("texto"), auth);
+            return ResponseEntity.status(201).body(c);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
 
-        Long eventoId = Long.valueOf(body.get("eventoId").toString());
-        Evento evento = eventoRepository.findById(eventoId)
-                .orElseThrow(() -> new RuntimeException("Evento não encontrado"));
-
-        Comentario comentario = new Comentario();
-        comentario.setUsuario(usuario);
-        comentario.setEvento(evento);
-        comentario.setTexto(body.get("texto").toString());
-        comentario.setDataCriacao(new Date());
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(comentarioRepository.save(comentario));
+    @DeleteMapping("/{comentarioId}")
+    public ResponseEntity<Object> deletar(@PathVariable Long eventoId,
+                                          @PathVariable Long comentarioId,
+                                          Authentication auth) {
+        try {
+            comentarioService.deletar(comentarioId, auth);
+            return ResponseEntity.ok(Map.of("message", "Comentário removido"));
+        } catch (RuntimeException e) {
+            if ("SEM_PERMISSAO".equals(e.getMessage()))
+                return ResponseEntity.status(403).body(Map.of("message", "Sem permissão"));
+            return ResponseEntity.status(404).body(Map.of("message", "Comentário não encontrado"));
+        }
     }
 }
