@@ -1,4 +1,4 @@
-package com.TracoCultural.TracoCultural.service;
+package com.TracoCultural.TracoCultural.model.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.SimpleMailMessage;
@@ -14,27 +14,29 @@ public class EmailService {
     private JavaMailSender mailSender;
 
 
-    public void enviarEmailConfirmacao(String email, String token) {
-
-
-        String link = "http://localhost:8080/api/v1/auth/confirmar-email?token=" + token;
+    public void enviarEmailConfirmacao(String email, String codigo) {
 
 
         SimpleMailMessage mensagem = new SimpleMailMessage();
 
+
         mensagem.setTo(email);
-        mensagem.setSubject("Confirmação de cadastro - Traço Cultural");
+
+        mensagem.setSubject("Código de confirmação - Traço Cultural");
+
 
         mensagem.setText(
                 "Olá!\n\n" +
                 "Obrigado por se cadastrar no Traço Cultural.\n\n" +
-                "Para confirmar seu email, clique no link abaixo:\n\n" +
-                link +
-                "\n\nCaso você não tenha criado essa conta, ignore este email."
+                "Seu código de confirmação é:\n\n" +
+                codigo +
+                "\n\nDigite esse código no aplicativo para confirmar seu email.\n\n" +
+                "Caso você não tenha criado essa conta, ignore este email."
         );
 
 
         mailSender.send(mensagem);
+
     }
 
 }

@@ -49,14 +49,15 @@ public class Usuario {
     private String corFundo;
 
 
-    // NOVOS CAMPOS DE CONFIRMAÇÃO DE EMAIL
+
+    // CONFIRMAÇÃO DE EMAIL
 
     @Column(name = "email_verificado")
     private boolean emailVerificado = false;
 
 
-    @Column(name = "token_confirmacao")
-    private String tokenConfirmacao;
+    @Column(name = "codigo_confirmacao", length = 6)
+    private String codigoConfirmacao;
 
 
 
@@ -81,24 +82,6 @@ public class Usuario {
     }
 
 
-    public String getSenha() {
-        return senha;
-    }
-
-    public void setSenha(String senha) {
-        this.senha = senha;
-    }
-
-
-    public boolean getIsAdm() {
-        return isAdm;
-    }
-
-    public void setIsAdm(boolean isAdm) {
-        this.isAdm = isAdm;
-    }
-
-
     public String getEmail() {
         return email;
     }
@@ -108,12 +91,30 @@ public class Usuario {
     }
 
 
+    public String getSenha() {
+        return senha;
+    }
+
+    public void setSenha(String senha) {
+        this.senha = senha;
+    }
+
+
     public byte[] getFotoPerfil() {
         return fotoPerfil;
     }
 
     public void setFotoPerfil(byte[] fotoPerfil) {
         this.fotoPerfil = fotoPerfil;
+    }
+
+
+    public boolean getIsAdm() {
+        return isAdm;
+    }
+
+    public void setIsAdm(boolean isAdm) {
+        this.isAdm = isAdm;
     }
 
 
@@ -144,7 +145,9 @@ public class Usuario {
     }
 
 
-    // EMAIL
+
+    // CONFIRMAÇÃO EMAIL
+
 
     public boolean isEmailVerificado() {
         return emailVerificado;
@@ -155,12 +158,12 @@ public class Usuario {
     }
 
 
-    public String getTokenConfirmacao() {
-        return tokenConfirmacao;
+    public String getCodigoConfirmacao() {
+        return codigoConfirmacao;
     }
 
-    public void setTokenConfirmacao(String tokenConfirmacao) {
-        this.tokenConfirmacao = tokenConfirmacao;
+    public void setCodigoConfirmacao(String codigoConfirmacao) {
+        this.codigoConfirmacao = codigoConfirmacao;
     }
 
 }
