@@ -2,6 +2,8 @@ package com.TracoCultural.TracoCultural.model.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 
 @Entity
 @Table(name = "Usuario")
@@ -11,35 +13,54 @@ public class Usuario {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+
     @Column(length = 100, nullable = false)
     private String nome;
 
+
+    @NotBlank(message = "Email é obrigatório")
+    @Email(message = "Email inválido")
     @Column(length = 45, nullable = false, unique = true)
     private String email;
+
 
     @Column(length = 255, nullable = false)
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String senha;
 
+
     @Column(name = "foto_perfil")
     private byte[] fotoPerfil;
+
 
     @Column(name = "is_adm")
     private boolean isAdm;
 
+
     @Column(length = 2)
     private String estado;
 
+
     @Column(length = 100)
     private String icone;
+
 
     @Column(name = "cor_fundo", length = 20)
     private String corFundo;
 
 
+    // NOVOS CAMPOS DE CONFIRMAÇÃO DE EMAIL
 
-    //              -------------------------------- Getter e Setter --------------------------------
+    @Column(name = "email_verificado")
+    private boolean emailVerificado = false;
 
+
+    @Column(name = "token_confirmacao")
+    private String tokenConfirmacao;
+
+
+
+    // GETTERS E SETTERS
 
 
     public Long getId() {
@@ -50,6 +71,7 @@ public class Usuario {
         this.id = id;
     }
 
+
     public String getNome() {
         return nome;
     }
@@ -57,6 +79,7 @@ public class Usuario {
     public void setNome(String nome) {
         this.nome = nome;
     }
+
 
     public String getSenha() {
         return senha;
@@ -66,6 +89,7 @@ public class Usuario {
         this.senha = senha;
     }
 
+
     public boolean getIsAdm() {
         return isAdm;
     }
@@ -73,6 +97,7 @@ public class Usuario {
     public void setIsAdm(boolean isAdm) {
         this.isAdm = isAdm;
     }
+
 
     public String getEmail() {
         return email;
@@ -82,6 +107,7 @@ public class Usuario {
         this.email = email;
     }
 
+
     public byte[] getFotoPerfil() {
         return fotoPerfil;
     }
@@ -90,13 +116,51 @@ public class Usuario {
         this.fotoPerfil = fotoPerfil;
     }
 
-    public String getEstado() { return estado; }
-    public void setEstado(String estado) { this.estado = estado; }
 
-    public String getIcone() { return icone; }
-    public void setIcone(String icone) { this.icone = icone; }
+    public String getEstado() {
+        return estado;
+    }
 
-    public String getCorFundo() { return corFundo; }
-    public void setCorFundo(String corFundo) { this.corFundo = corFundo; }
+    public void setEstado(String estado) {
+        this.estado = estado;
+    }
+
+
+    public String getIcone() {
+        return icone;
+    }
+
+    public void setIcone(String icone) {
+        this.icone = icone;
+    }
+
+
+    public String getCorFundo() {
+        return corFundo;
+    }
+
+    public void setCorFundo(String corFundo) {
+        this.corFundo = corFundo;
+    }
+
+
+    // EMAIL
+
+    public boolean isEmailVerificado() {
+        return emailVerificado;
+    }
+
+    public void setEmailVerificado(boolean emailVerificado) {
+        this.emailVerificado = emailVerificado;
+    }
+
+
+    public String getTokenConfirmacao() {
+        return tokenConfirmacao;
+    }
+
+    public void setTokenConfirmacao(String tokenConfirmacao) {
+        this.tokenConfirmacao = tokenConfirmacao;
+    }
 
 }
