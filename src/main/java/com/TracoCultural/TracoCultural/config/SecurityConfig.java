@@ -38,74 +38,54 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
 
-        http
+        return http
 
-            // desativa proteção CSRF para API REST
-            .csrf(csrf -> csrf.disable())
-
-
-            // libera CORS
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(csrf -> csrf.disable())
 
 
-            // API usando JWT não usa sessão
-            .sessionManagement(session ->
-                    session.sessionCreationPolicy(
-                            SessionCreationPolicy.STATELESS
-                    )
-            )
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
 
-            .authorizeHttpRequests(auth -> auth
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
 
 
-                    // libera todas as rotas de autenticação
-                    .requestMatchers(
-                            "/api/v1/auth/**"
-                    ).permitAll()
+                .authorizeHttpRequests(auth -> auth
 
 
-
-                    // libera OPTIONS do navegador
-                    .requestMatchers(
-                            HttpMethod.OPTIONS,
-                            "/**"
-                    ).permitAll()
+                        // rotas públicas
+                        .requestMatchers(
+                                "/api/v1/auth/**"
+                        ).permitAll()
 
 
-
-                    // eventos públicos
-                    .requestMatchers(
-                            HttpMethod.GET,
-                            "/api/v1/eventos/**"
-                    ).permitAll()
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/v1/eventos/**"
+                        ).permitAll()
 
 
-
-                    // página de erro
-                    .requestMatchers(
-                            "/error"
-                    ).permitAll()
+                        .requestMatchers(
+                                "/error"
+                        ).permitAll()
 
 
+                        // resto protegido
+                        .anyRequest().authenticated()
 
-                    // qualquer outra rota precisa de token
-                    .anyRequest().authenticated()
-
-            )
-
+                )
 
 
-            .addFilterBefore(
-                    jwtAuthFilter,
-                    UsernamePasswordAuthenticationFilter.class
-            );
+                .addFilterBefore(
+                        jwtAuthFilter,
+                        UsernamePasswordAuthenticationFilter.class
+                )
 
 
-
-        return http.build();
-
+                .build();
     }
+
 
 
 
@@ -121,42 +101,36 @@ public class SecurityConfig {
 
 
 
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource(){
 
 
-        CorsConfiguration config = new CorsConfiguration();
+        CorsConfiguration configuration = new CorsConfiguration();
 
 
-        config.setAllowedOriginPatterns(
+        configuration.setAllowedOriginPatterns(
                 List.of("*")
         );
 
 
-        config.setAllowedMethods(
+        configuration.setAllowedMethods(
                 List.of(
                         "GET",
                         "POST",
                         "PUT",
                         "DELETE",
-                        "PATCH",
                         "OPTIONS"
                 )
         );
 
 
-        config.setAllowedHeaders(
+        configuration.setAllowedHeaders(
                 List.of("*")
         );
 
 
-        config.setExposedHeaders(
-                List.of("Authorization")
-        );
-
-
-        // como está usando "*", precisa ficar false
-        config.setAllowCredentials(false);
+        configuration.setAllowCredentials(false);
 
 
 
@@ -164,10 +138,12 @@ public class SecurityConfig {
                 new UrlBasedCorsConfigurationSource();
 
 
+
         source.registerCorsConfiguration(
                 "/**",
-                config
+                configuration
         );
+
 
 
         return source;
