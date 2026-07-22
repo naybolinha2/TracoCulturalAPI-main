@@ -53,27 +53,28 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
 
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        // rotas públicas
-                        .requestMatchers(
-                                "/api/v1/auth/**"
-                        ).permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/register").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/verificar-codigo").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/reenviar-codigo").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/usuarios/auth/register").permitAll()
 
+                        .requestMatchers(HttpMethod.GET, "/api/v1/eventos").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/eventos/{id}").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/eventos/{id}/comentarios").permitAll()
 
-                        .requestMatchers(
-                                HttpMethod.GET,
-                                "/api/v1/eventos/**"
-                        ).permitAll()
+                        .requestMatchers(HttpMethod.POST,   "/api/v1/eventos").authenticated()
+                        .requestMatchers(HttpMethod.PUT,    "/api/v1/eventos/{id}").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/eventos/{id}").authenticated()
+                        .requestMatchers("/api/v1/favoritos/{id}").authenticated()
+                        .requestMatchers(HttpMethod.POST,   "/api/v1/eventos/{id}/comentarios").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/eventos/{id}/comentarios/{id2}").authenticated()
+                        .requestMatchers("/api/v1/usuarios/{id}").authenticated()
+                        .requestMatchers("/api/v1/admin/{id}").authenticated()
 
-
-                        .requestMatchers(
-                                "/error"
-                        ).permitAll()
-
-
-                        // resto protegido
                         .anyRequest().authenticated()
-
                 )
 
 
@@ -87,19 +88,12 @@ public class SecurityConfig {
     }
 
 
-
-
-
     @Bean
     public PasswordEncoder passwordEncoder(){
 
         return new BCryptPasswordEncoder();
 
     }
-
-
-
-
 
 
     @Bean
@@ -120,6 +114,7 @@ public class SecurityConfig {
                         "POST",
                         "PUT",
                         "DELETE",
+                        "PATCH",
                         "OPTIONS"
                 )
         );

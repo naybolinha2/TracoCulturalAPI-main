@@ -47,14 +47,6 @@ public class EmailService {
 
 
 
-            // Depois que publicar o backend,
-            // troque essa URL pela URL real da API
-            String link =
-                    "http://localhost:8080/api/v1/auth/confirmar-email/"
-                    + codigo;
-
-
-
             String html =
 
                     "<html>" +
@@ -67,29 +59,32 @@ public class EmailService {
                     "<p>Recebemos um cadastro no <b>Traço Cultural</b>.</p>" +
 
 
-                    "<p>Foi você quem criou essa conta?</p>" +
+                    "<p>Foi você quem criou essa conta? Digite o código abaixo no app para confirmar:</p>" +
 
 
                     "<br>" +
 
 
-                    "<a href='" + link + "' " +
-                    "style='" +
+                    "<div style='" +
                     "background-color:#6c63ff;" +
                     "color:white;" +
-                    "padding:12px 25px;" +
-                    "text-decoration:none;" +
+                    "padding:16px 30px;" +
                     "border-radius:8px;" +
                     "font-weight:bold;" +
+                    "font-size:28px;" +
+                    "letter-spacing:6px;" +
                     "display:inline-block;" +
                     "'>" +
 
-                    "SIM, FUI EU" +
+                    codigo +
 
-                    "</a>" +
+                    "</div>" +
 
 
                     "<br><br>" +
+
+
+                    "<p>Esse código é válido por 15 minutos.</p>" +
 
 
                     "<p>Caso você não tenha criado essa conta, ignore este email.</p>" +
