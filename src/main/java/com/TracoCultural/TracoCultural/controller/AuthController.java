@@ -70,7 +70,6 @@ public class AuthController {
         try {
             emailService.enviarEmailConfirmacao(novo.getEmail(), codigo);
         } catch (Exception e) {
-            // Não derruba o cadastro se o envio falhar; a pessoa pode usar "reenviar código".
             System.err.println("Falha ao enviar email de verificação para " + novo.getEmail() + ": " + e.getMessage());
         }
 
@@ -177,6 +176,88 @@ public class AuthController {
         return String.format("%06d", numero);
     }
 
+    // POST /api/v1/auth/esqueci-senha
+    @PostMapping("/esqueci-senha")
+    public ResponseEntity<Object> esqueciSenha(@RequestBody Map<String, String> body) {
+        String email = body.get("email");
+        if (email == null) {
+            return ResponseEntity.badRequest().body(
+                    Map.of("status", 400, "message", "Email é obrigatório"));
+        }
+
+        Usuario usuario = usuarioRepository.findByEmail(email);
+
+        if (usuario == null) {
+            return ResponseEntity.ok(Map.of(
+                    "status", 200,
+                    "message", "Se esse email estiver cadastrado, um código foi enviado."));
+        }
+
+        if (estaBloqueado("reset:" + email)) {
+            return ResponseEntity.status(429).body(
+                    Map.of("status", 429, "message", "Muitas tentativas. Tente novamente em alguns minutos."));
+        }
+        registrarTentativa("reset:" + email);
+
+        String codigo = gerarCodigo();
+        usuario.setCodigoResetSenha(codigo);
+        usuario.setCodigoResetExpiracao(LocalDateTime.now().plusMinutes(validadeCodigoMinutos));
+        usuarioRepository.save(usuario);
+
+        try {
+            emailService.enviarEmailRedefinicaoSenha(usuario.getEmail(), codigo);
+        } catch (Exception e) {
+            System.err.println("Falha ao enviar email de redefinição para " + usuario.getEmail() + ": " + e.getMessage());
+        }
+
+        return ResponseEntity.ok(Map.of(
+                "status", 200,
+                "message", "Se esse email estiver cadastrado, um código foi enviado."));
+    }
+
+    // POST /api/v1/auth/redefinir-senha
+    @PostMapping("/redefinir-senha")
+    public ResponseEntity<Object> redefinirSenha(@RequestBody Map<String, String> body) {
+        String email = body.get("email");
+        String codigo = body.get("codigo");
+        String novaSenha = body.get("novaSenha");
+
+        if (email == null || codigo == null || novaSenha == null) {
+            return ResponseEntity.badRequest().body(
+                    Map.of("status", 400, "message", "Email, código e nova senha são obrigatórios"));
+        }
+
+        if (novaSenha.length() < 8) {
+            return ResponseEntity.badRequest().body(
+                    Map.of("status", 400, "message", "A nova senha deve ter no mínimo 8 caracteres"));
+        }
+
+        Usuario usuario = usuarioRepository.findByEmail(email);
+        if (usuario == null) {
+            return ResponseEntity.status(404).body(
+                    Map.of("status", 404, "message", "Usuário não encontrado"));
+        }
+
+        if (usuario.getCodigoResetSenha() == null
+                || usuario.getCodigoResetExpiracao() == null
+                || usuario.getCodigoResetExpiracao().isBefore(LocalDateTime.now())) {
+            return ResponseEntity.status(400).body(
+                    Map.of("status", 400, "message", "Código expirado. Solicite um novo código."));
+        }
+
+        if (!usuario.getCodigoResetSenha().equals(codigo)) {
+            return ResponseEntity.status(401).body(
+                    Map.of("status", 401, "message", "Código inválido."));
+        }
+
+        usuario.setSenha(passwordEncoder.encode(novaSenha));
+        usuario.setCodigoResetSenha(null);
+        usuario.setCodigoResetExpiracao(null);
+        usuarioRepository.save(usuario);
+
+        return ResponseEntity.ok(Map.of("status", 200, "message", "Senha redefinida com sucesso."));
+    }
+
     // POST /api/v1/auth/login
     @PostMapping("/login")
     public ResponseEntity<Object> login(@RequestBody Map<String, String> body) {
@@ -231,7 +312,7 @@ public class AuthController {
     private boolean estaBloqueado(String email) {
         List<LocalDateTime> tentativas = tentativasPorEmail.get(email);
         if (tentativas == null) return false;
-        LocalDateTime janela = LocalDateTime.now().minusMinutes(JANELA_MINUTOS);
+         LocalDateTime janela = LocalDateTime.now().minusMinutes(JANELA_MINUTOS);
         tentativas.removeIf(t -> t.isBefore(janela));
         return tentativas.size() >= MAX_TENTATIVAS;
     }

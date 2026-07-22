@@ -49,8 +49,13 @@ public class Usuario {
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private LocalDateTime codigoExpiracao;
 
+    @Column(name = "codigo_reset_senha", length = 6)
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    private String codigoResetSenha;
 
-
+    @Column(name = "codigo_reset_expiracao")
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    private LocalDateTime codigoResetExpiracao;
     //              -------------------------------- Getter e Setter --------------------------------
 
 
@@ -120,5 +125,11 @@ public class Usuario {
 
     public LocalDateTime getCodigoExpiracao() { return codigoExpiracao; }
     public void setCodigoExpiracao(LocalDateTime codigoExpiracao) { this.codigoExpiracao = codigoExpiracao; }
+
+    public String getCodigoResetSenha() { return codigoResetSenha; }
+    public void setCodigoResetSenha(String codigoResetSenha) { this.codigoResetSenha = codigoResetSenha; }
+
+    public LocalDateTime getCodigoResetExpiracao() { return codigoResetExpiracao; }
+    public void setCodigoResetExpiracao(LocalDateTime codigoResetExpiracao) { this.codigoResetExpiracao = codigoResetExpiracao; }
 
 }
