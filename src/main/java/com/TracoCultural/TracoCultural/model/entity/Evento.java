@@ -54,7 +54,7 @@ public class Evento {
 
 
 
-    //              -------------------------------- Getter e Setter --------------------------------
+    
 
 
     public Long getId() {
